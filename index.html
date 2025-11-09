@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MUBS Digital Noticeboard – Login & Sign Up</title>
+  
+  <!-- Bootstrap 5 + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    :root{ /* Light theme */
+      --bg:#f8fafc; --text:#0f172a; --muted:#475569; --card:#ffffff; --border:#e2e8f0; --accent:#0d6efd; --accent-contrast:#ffffff;
+      --danger:#dc3545;
+    }
+    [data-theme="dark"]{ /* Dark theme (navy + gold) */
+      --bg:#0a1128; --text:#f8fafc; --muted:#cbd5e1; --card:#0f172a; --border:#1e293b; --accent:#facc15; --accent-contrast:#111827;
+      --danger:#ef4444;
+    }
+
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--text)}
+
+    .auth-wrap{min-height:100vh;display:grid;place-items:center;padding:1rem}
+    .auth-card{background:var(--card);border:1px solid var(--border);border-radius:1rem;box-shadow:0 10px 30px rgba(0,0,0,.08);max-width:520px;width:100%}
+
+    .logo-wrap{display:grid;place-items:center}
+    .logo{width:84px;height:84px;object-fit:contain;border-radius:.5rem;border:1px solid var(--border);background:#fff}
+
+    .tab-btn{flex:1}
+    .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .btn-outline-secondary{border-color:var(--border);color:var(--text)}
+
+    .form-control, .form-select {background:var(--card);color:var(--text);border:1px solid var(--border)}
+    .form-control::placeholder {color:var(--muted)}
+
+    .divider{display:flex;align-items:center;gap:.75rem;color:var(--muted)}
+    .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+
+    .top-actions{position:fixed;top:1rem;right:1rem;display:flex;gap:.5rem}
+  </style>
+</head>
+<body>
+  <div class="top-actions">
+    <button id="themeToggle" class="btn btn-sm btn-outline-secondary"><i class="bi bi-moon-stars"></i></button>
+  </div>
+
+  <div class="auth-wrap">
+    <div class="auth-card p-4 p-md-5">
+      <!-- Brand -->
+      <div class="text-center mb-3 logo-wrap">
+        <img src="mubs.png" class="logo mb-2" alt="MUBS" onerror="this.style.display='none'">
+        <h4 class="fw-bold mb-1">Welcome to the Digital Noticeboard</h4>
+        <div class="text-muted">Makerere University Business School</div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="btn-group w-100 mb-3" role="group">
+        <button class="btn btn-primary tab-btn" id="tabLogin">Login</button>
+        <button class="btn btn-outline-secondary tab-btn" id="tabSignup">Sign Up</button>
+      </div>
+
+      <!-- Alerts -->
+      <div id="alertWrap"></div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" autocomplete="on">
+        <div class="mb-3">
+          <label class="form-label">Email or Staff/Student ID</label>
+          <input type="text" id="l_id" class="form-control" placeholder="Enter your email or ID" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Password</label>
+          <div class="input-group">
+            <input type="password" id="l_password" class="form-control" placeholder="Enter your password" required>
+            <button class="btn btn-outline-secondary" type="button" id="l_toggle"><i class="bi bi-eye"></i></button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="rememberMe">
+            <label class="form-check-label" for="rememberMe">Remember me</label>
+          </div>
+          <a href="#" class="text-decoration-none" onclick="showInfo('Use your created account. Password reset will be added later.')">Forgot Password?</a>
+        </div>
+        <button class="btn btn-primary w-100">Login</button>
+      </form>
+
+      <!-- SIGN UP FORM -->
+      <form id="signupForm" class="mt-2" hidden>
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label">Full Name</label>
+            <input id="s_name" class="form-control" placeholder="e.g., Jane Akello" required>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Email or ID</label>
+            <input id="s_id" class="form-control" placeholder="e.g., jane@mubs.ac.ug or 23/U/12345" required>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Password</label>
+            <div class="input-group">
+              <input type="password" id="s_password" class="form-control" placeholder="Create a password" minlength="4" required>
+              <button class="btn btn-outline-secondary" type="button" id="s_toggle"><i class="bi bi-eye"></i></button>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Role</label>
+            <select id="s_role" class="form-select" required>
+              <option value="">Select role…</option>
+              <option value="student">Student</option>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary w-100 mt-3">Create Account</button>
+      </form>
+
+      <div class="divider my-4"><span>or</span></div>
+      <div class="text-center small text-muted">By continuing, you agree to the MUBS ICT policies.</div>
+    </div>
+  </div>
+
+  <script>
+    /**************** THEME ****************/
+    function applyTheme(){ const t = localStorage.getItem('theme')||'light'; document.documentElement.setAttribute('data-theme',t); document.body.setAttribute('data-theme',t); }
+    function toggleTheme(){ const t = localStorage.getItem('theme')||'light'; const n = t==='light'?'dark':'light'; localStorage.setItem('theme',n); applyTheme(); }
+
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    applyTheme();
+
+    /**************** UTILS ****************/
+    const USERS_KEY = 'users';
+    function loadUsers(){ const list = JSON.parse(localStorage.getItem(USERS_KEY)||'null'); return Array.isArray(list)? list : []; }
+    function saveUsers(list){ localStorage.setItem(USERS_KEY, JSON.stringify(list)); }
+
+    function showAlert(msg, type='success'){ // types: success, danger, warning, info
+      const html = `<div class="alert alert-${type} alert-dismissible fade show" role="alert" style="background:var(--card);border:1px solid var(--border);color:var(--text)">
+        ${msg}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>`;
+      document.getElementById('alertWrap').innerHTML = html;
+    }
+    function showInfo(msg){ showAlert(msg, 'info'); }
+
+    function routeByRole(role){
+      if(role==='admin') window.location.href = 'admin_dash.html';
+      else if(role==='staff') window.location.href = 'staff_dashboard.html';
+      else window.location.href = 'student_dash.html';
+    }
+
+    /**************** TABS ****************/
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+
+    function activate(tab){
+      if(tab==='login'){
+        tabLogin.classList.replace('btn-outline-secondary','btn-primary');
+        tabSignup.classList.replace('btn-primary','btn-outline-secondary');
+        loginForm.hidden = false; signupForm.hidden = true;
+      } else {
+        tabSignup.classList.replace('btn-outline-secondary','btn-primary');
+        tabLogin.classList.replace('btn-primary','btn-outline-secondary');
+        signupForm.hidden = false; loginForm.hidden = true;
+      }
+      document.getElementById('alertWrap').innerHTML='';
+    }
+    tabLogin.addEventListener('click', ()=> activate('login'));
+    tabSignup.addEventListener('click', ()=> activate('signup'));
+
+    /**************** PASSWORD TOGGLES ****************/
+    document.getElementById('l_toggle').addEventListener('click', ()=>{
+      const i = document.getElementById('l_password');
+      i.type = i.type==='password' ? 'text' : 'password';
+    });
+    document.getElementById('s_toggle').addEventListener('click', ()=>{
+      const i = document.getElementById('s_password');
+      i.type = i.type==='password' ? 'text' : 'password';
+    });
+
+    /**************** SIGN UP ****************/
+    signupForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const name = document.getElementById('s_name').value.trim();
+      const id = document.getElementById('s_id').value.trim();
+      const pass = document.getElementById('s_password').value;
+      const role = document.getElementById('s_role').value;
+      if(!name || !id || !pass || !role){ showAlert('Please fill all fields.', 'danger'); return; }
+      const users = loadUsers();
+      if(users.find(u=> u.id.toLowerCase()===id.toLowerCase())){ showAlert('An account with this email/ID already exists.', 'danger'); return; }
+      users.push({ name, id, pass, role });
+      saveUsers(users);
+      showAlert('Account created successfully. You can log in now.');
+      activate('login');
+      document.getElementById('l_id').value = id; // convenience
+    });
+
+    /**************** LOGIN ****************/
+    loginForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const id = document.getElementById('l_id').value.trim();
+      const pass = document.getElementById('l_password').value;
+      const users = loadUsers();
+      const found = users.find(u=> u.id.toLowerCase()===id.toLowerCase() && u.pass===pass);
+      if(!found){ showAlert('Invalid credentials. Please try again.', 'danger'); return; }
+      // optionally remember
+      if(document.getElementById('rememberMe').checked){ localStorage.setItem('last_user', JSON.stringify(found)); }
+      showAlert('Login successful. Redirecting...');
+      setTimeout(()=> routeByRole(found.role), 400);
+    });
+
+    // If a remembered user exists, prefill login
+    (function(){
+      const last = JSON.parse(localStorage.getItem('last_user')||'null');
+      if(last){ document.getElementById('l_id').value = last.id; }
+    })();
+
+    // Default to login tab
+    activate('login');
+  </script>
+</body>
+</html>

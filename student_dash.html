@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MUBS Student – Digital Noticeboard (Single Page)</title>
+  
+  <!-- Bootstrap 5 + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    /* =====================
+       THEME (Light & Dark)
+       ===================== */
+    :root{
+      /* Light */
+      --bg:#f8fafc; --text:#0f172a; --muted:#475569; --card:#ffffff; --border:#e2e8f0; --accent:#0d6efd; --accent-contrast:#ffffff; --chip:#e7efff;
+    }
+    [data-theme="dark"]{ /* Dark (navy + gold) */
+      --bg:#0a1128; --text:#f8fafc; --muted:#cbd5e1; --card:#0f172a; --border:#1e293b; --accent:#facc15; --accent-contrast:#111827; --chip:#1f2a44;
+    }
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--text)}
+
+    /* ============ LAYOUT ============ */
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    @media (max-width: 991.98px){.app{grid-template-columns:1fr}}
+
+    /* Sidebar (desktop) */
+    .sidebar{background:var(--card);border-right:1px solid var(--border)}
+    .sidebar .brand{padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+    .logo{width:38px;height:38px;border-radius:10px;background:transparent;color:var(--accent-contrast);display:grid;place-items:center;font-weight:700;overflow:hidden}
+    .logo img{width:100%;height:100%;object-fit:contain;padding:4px}
+    .profile{padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+    .avatar{width:48px;height:48px;border-radius:999px;display:grid;place-items:center;background:var(--border);color:var(--text);font-weight:700}
+    .sidebar .nav-link{color:var(--text);border-radius:.65rem}
+    .sidebar .nav-link.active,.sidebar .nav-link:hover{background:var(--chip)}
+
+    /* Hide sidebar on mobile */
+    @media (max-width: 991.98px){.sidebar{display:none}}
+
+    /* Content */
+    .content{padding:1rem 1rem 5rem}
+    @media (min-width: 992px){.content{padding:1.5rem 2rem 3rem}}
+
+    /* Topbar */
+    .topbar{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:.75rem}
+
+    /* Cards */
+    .card-soft{background:var(--card);border:1px solid var(--border);border-radius:1rem}
+    .notice-card{background:var(--card);border:1px solid var(--border);border-radius:1rem;transition:transform .2s, box-shadow .2s;height:100%}
+    .notice-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+
+    /* Chips */
+    .chip{background:var(--chip);border:1px solid var(--border);color:var(--text);padding:.35rem .7rem;border-radius:999px;font-size:.9rem;cursor:pointer;user-select:none}
+    .chip.active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+
+    /* Buttons */
+    .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .btn-outline-secondary{border-color:var(--border);color:var(--text)}
+
+    .muted{color:var(--muted)}
+    .xsmall{font-size:.8rem}
+
+    /* =====================
+       MOBILE BOTTOM NAVBAR
+       ===================== */
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:none;z-index:1030}
+    .bottom-nav .nav-link{flex:1;text-align:center;color:var(--text);padding:.5rem 0}
+    .bottom-nav .nav-link.active{color:var(--accent)}
+    @media (max-width: 991.98px){.bottom-nav{display:flex}}
+
+    /* Sections hidden by default */
+    section[hidden]{display:none !important}
+    
+    /* Profile Picture Upload */
+    .avatar img{width:100%;height:100%;object-fit:cover;border-radius:999px}
+    
+    /* Mobile Profile Header */
+    .profile-mobile-header{position:sticky;top:0;z-index:1020;background:var(--card)}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- ================= Sidebar (Desktop) ================= -->
+    <aside class="sidebar">
+      <div class="brand d-flex align-items-center gap-2">
+        <div class="logo">
+          <img src="mubs.png" alt="MUBS Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='M';">
+        </div>
+        <div>
+          <div class="fw-bold">MUBS Noticeboard</div>
+          <div class="small muted">Student Panel</div>
+        </div>
+      </div>
+      <div class="profile d-flex align-items-center gap-3">
+        <div class="avatar" id="profileInitials" style="position: relative; overflow: hidden;">
+          <div id="profileInitialsText">ST</div>
+          <img id="profileSidebarImg" src="" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0;">
+        </div>
+        <div>
+          <div class="fw-semibold" id="profileName">Student Name</div>
+          <div class="xsmall muted" id="profileId">23/U/12345</div>
+        </div>
+      </div>
+      <nav class="nav flex-column p-2" id="sideNav">
+        <a class="nav-link active" data-link="dashboard" href="#"><i class="bi bi-columns-gap me-2"></i>Dashboard</a>
+        <a class="nav-link" data-link="notices" href="#"><i class="bi bi-megaphone me-2"></i>Notices</a>
+        <a class="nav-link" data-link="profile" href="#"><i class="bi bi-person me-2"></i>Profile</a>
+        <hr>
+        <button id="toggleThemeSide" class="btn btn-sm btn-outline-secondary w-100 mb-2"><i class="bi bi-moon me-1"></i> Toggle Theme</button>
+        <button class="btn btn-sm btn-outline-danger w-100" onclick="logout()"><i class="bi bi-box-arrow-right me-1"></i> Logout</button>
+      </nav>
+    </aside>
+
+    <!-- ================= Content ================= -->
+    <main class="content">
+      <!-- ===== Topbar (search + actions) ===== -->
+      <div class="topbar d-flex flex-wrap align-items-center gap-2 mb-4">
+        <!-- Mobile Logo and Profile -->
+        <div class="d-md-none d-flex align-items-center gap-2">
+          <!-- Mobile Profile Picture -->
+          <div class="avatar" id="topbarProfileAvatar" style="width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; background: var(--border); color: var(--text); font-weight: 700; flex-shrink: 0; cursor: pointer; overflow: hidden;" data-link="profile">
+            <img id="topbarProfileImg" src="" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 999px; display: none; position: absolute;">
+          </div>
+          <div class="logo" style="width: 32px; height: 32px;">
+            <img src="mubs.png" alt="MUBS Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='M';" style="width: 100%; height: 100%; object-fit: contain;">
+          </div>
+          <div class="fw-bold small">MUBS</div>
+        </div>
+        <div class="input-group flex-grow-1">
+          <span class="input-group-text bg-transparent border-0"><i class="bi bi-search"></i></span>
+          <input class="form-control border-0" id="searchInput" placeholder="Search notices by title or content..." />
+        </div>
+        <div class="ms-auto d-flex gap-2 align-items-center">
+          <button id="toggleThemeTop" class="btn btn-outline-secondary"><i class="bi bi-sun"></i></button>
+          <button class="btn btn-primary d-none d-md-inline-block" data-link="notices">View All</button>
+        </div>
+      </div>
+
+      <!-- ===== Sections ===== -->
+
+      <!-- DASHBOARD -->
+      <section id="section-dashboard">
+        <div class="card-soft p-3 mb-4 d-flex flex-wrap gap-2" id="filterChips"></div>
+        <div class="row g-3" id="gridDashboard"></div>
+        <div class="text-center mt-3"><button id="loadMoreDash" class="btn btn-outline-secondary">Load More</button></div>
+      </section>
+
+      <!-- NOTICES (List) -->
+      <section id="section-notices" hidden>
+        <div class="card-soft p-3 mb-3 d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">All Notices</div>
+          <div>
+            <select id="filterSelect" class="form-select form-select-sm">
+              <option value="all">All</option>
+              <option value="Academics">Academics</option>
+              <option value="Examinations">Examinations</option>
+              <option value="Events">Events</option>
+              <option value="ICT">ICT</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+        </div>
+        <!-- Desktop Table View -->
+        <div class="table-responsive card-soft d-none d-md-block">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr><th>Title</th><th>Department</th><th>Category</th><th>Date</th><th class="text-end">Action</th></tr>
+            </thead>
+            <tbody id="tableNotices"></tbody>
+          </table>
+        </div>
+        <!-- Mobile Card View -->
+        <div class="row g-3 d-md-none" id="noticesCards"></div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="section-profile" hidden>
+        <!-- Mobile Sticky Profile Header -->
+        <div class="profile-mobile-header d-md-none card-soft p-3 mb-3 sticky-top" style="top: 0; z-index: 1020; background: var(--card);">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar" id="profileMobileAvatar" style="width: 48px; height: 48px; border-radius: 999px; display: grid; place-items: center; background: var(--border); color: var(--text); font-weight: 700; flex-shrink: 0;"></div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold" id="profileMobileName">Student Name</div>
+              <div class="xsmall muted" id="profileMobileId">23/U/12345</div>
+            </div>
+          </div>
+        </div>
+        <h4 class="fw-bold mb-3">Profile</h4>
+        <form id="profileForm" class="card-soft p-4">
+          <div class="row g-3">
+            <div class="col-12 text-center mb-3">
+              <div class="position-relative d-inline-block">
+                <div class="avatar" id="profilePicturePreview" style="width: 120px; height: 120px; border-radius: 999px; display: grid; place-items: center; background: var(--border); color: var(--text); font-weight: 700; font-size: 2.5rem; margin: 0 auto; overflow: hidden; position: relative;">
+                  <div id="profilePictureInitials"></div>
+                  <img id="profilePictureImg" src="" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; z-index: 1;">
+                </div>
+                <label for="p_picture" class="btn btn-sm btn-primary position-absolute" style="bottom: 0; right: 0; border-radius: 999px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <i class="bi bi-camera"></i>
+                </label>
+                <input type="file" id="p_picture" accept="image/*" style="display: none;">
+              </div>
+              <div class="mt-2">
+                <label for="p_picture" class="btn btn-sm btn-outline-secondary" style="cursor: pointer;">Upload Picture</label>
+                <button type="button" id="removePicture" class="btn btn-sm btn-outline-danger" style="display: none;">Remove</button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Full Name</label>
+              <input id="p_name" class="form-control" placeholder="Student Name" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Student ID</label>
+              <input id="p_id" class="form-control" placeholder="23/U/12345" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input id="p_email" type="email" class="form-control" placeholder="name@mubs.ac.ug" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Department</label>
+              <input id="p_dept" class="form-control" placeholder="Faculty / Department" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Bio</label>
+              <textarea id="p_bio" class="form-control" rows="4" placeholder="Short intro..."></textarea>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary" id="resetProfile">Reset</button>
+            <button type="submit" class="btn btn-primary">Save Profile</button>
+          </div>
+        </form>
+        <div class="card-soft p-4 mt-3">
+          <button class="btn btn-outline-danger w-100" onclick="logout()">
+            <i class="bi bi-box-arrow-right me-2"></i> Logout
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= Bottom Navbar (Mobile) ================= -->
+  <nav class="bottom-nav">
+    <a class="nav-link active" data-link="dashboard" href="#"><i class="bi bi-house fs-5 d-block"></i><span class="xsmall">Home</span></a>
+    <a class="nav-link" data-link="notices" href="#"><i class="bi bi-megaphone fs-5 d-block"></i><span class="xsmall">Notices</span></a>
+    <a class="nav-link" data-link="profile" href="#"><i class="bi bi-person fs-5 d-block"></i><span class="xsmall">Profile</span></a>
+    <button class="nav-link border-0 bg-transparent" id="toggleThemeBottom"><i class="bi bi-moon-stars fs-5 d-block"></i><span class="xsmall">Theme</span></button>
+  </nav>
+
+  <script>
+    /******************** THEME *************************/
+    function applyTheme(){
+      const t = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      document.body.setAttribute('data-theme', t);
+    }
+    function toggleTheme(){
+      const t = localStorage.getItem('theme') || 'light';
+      const n = t === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', n); applyTheme();
+    }
+
+    /******************** DATA (Frontend Only) *************************/
+    const seedNotices = [
+      { id: 1, title: 'Final Exam Timetable Released', category: 'Examinations', department: 'Academic Registrar', content: 'The final exam timetable for Semester I is now published. Kindly check your student portals for details.', createdAt: '2025-11-05', pinned: true, expires: '2025-12-31' },
+      { id: 2, title: 'ICT Maintenance Window', category: 'ICT', department: 'ICT Department', content: 'Scheduled maintenance on Saturday 10:00–12:00. Services may be intermittently unavailable.', createdAt: '2025-11-03', pinned: false, expires: '2025-11-15' },
+      { id: 3, title: 'Library Orientation Session', category: 'Events', department: 'Library', content: 'Join us for a brief orientation on new library systems and resources. All first-years are encouraged to attend.', createdAt: '2025-11-02', pinned: false, expires: '2025-11-10' },
+      { id: 4, title: 'Academic Registration Deadline', category: 'Academics', department: 'Admissions', content: 'Reminder: Registration closes on Friday at 5:00 PM. Late fees will apply thereafter.', createdAt: '2025-11-01', pinned: true, expires: '2025-11-07' },
+      { id: 5, title: 'Career Fair 2025', category: 'Events', department: 'Careers Office', content: 'Top companies will be on campus for recruitment. Prepare your CVs and dress formally.', createdAt: '2025-10-28', pinned: false, expires: '2025-11-20' },
+      { id: 6, title: 'Health Awareness Week', category: 'General', department: 'Student Affairs', content: 'Free health screenings available at the main hall. All are welcome.', createdAt: '2025-10-27', pinned: false, expires: '2025-11-30' },
+    ];
+
+    function getNotices(){
+      const stored = JSON.parse(localStorage.getItem('notices') || 'null');
+      return stored && Array.isArray(stored) ? stored : seedNotices;
+    }
+    function saveNotices(list){ localStorage.setItem('notices', JSON.stringify(list)); }
+
+    function getProfile(){
+      try {
+        if(typeof(Storage) === 'undefined') {
+          return { name: 'Student Name', id: '23/U/12345', email: 'student@mubs.ac.ug', dept: 'Faculty of Business', bio: '', picture: '' };
+        }
+        const stored = localStorage.getItem('student_profile');
+        if(!stored) {
+          return { name: 'Student Name', id: '23/U/12345', email: 'student@mubs.ac.ug', dept: 'Faculty of Business', bio: '', picture: '' };
+        }
+        const p = JSON.parse(stored);
+        return p || { name: 'Student Name', id: '23/U/12345', email: 'student@mubs.ac.ug', dept: 'Faculty of Business', bio: '', picture: '' };
+      } catch(error) {
+        console.error('Error getting profile:', error);
+        return { name: 'Student Name', id: '23/U/12345', email: 'student@mubs.ac.ug', dept: 'Faculty of Business', bio: '', picture: '' };
+      }
+    }
+    function saveProfile(p){
+      try {
+        if(typeof(Storage) === 'undefined') {
+          throw new Error('LocalStorage is not available');
+        }
+        localStorage.setItem('student_profile', JSON.stringify(p));
+      } catch(error) {
+        console.error('Error saving profile:', error);
+        if(error.name === 'QuotaExceededError') {
+          throw new Error('Storage quota exceeded. Please clear some data.');
+        }
+        throw error;
+      }
+    }
+
+    /******************** RENDER HELPERS *************************/
+    const chips = ['All','Academics','Examinations','Events','ICT','General'];
+    let activeChip = 'All';
+    let dashVisible = 6;
+
+    function filterByChipAndSearch(list, q){
+      return list.filter(n => {
+        const chipOk = activeChip === 'All' || n.category === activeChip || n.department === activeChip;
+        const textOk = !q || n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q);
+        return chipOk && textOk;
+      });
+    }
+
+    function renderChips(){
+      const wrap = document.getElementById('filterChips');
+      wrap.innerHTML = chips.map(c => `<button class="chip ${c===activeChip?'active':''}" data-chip="${c}">${c}</button>`).join('');
+      wrap.querySelectorAll('.chip').forEach(btn => btn.addEventListener('click', ()=>{ activeChip = btn.dataset.chip; dashVisible=6; renderDashboard(); }));
+    }
+
+    function renderDashboard(){
+      const list = getNotices();
+      const q = (document.getElementById('searchInput').value||'').toLowerCase();
+      const data = filterByChipAndSearch(list, q).slice(0, dashVisible);
+      const grid = document.getElementById('gridDashboard');
+      if(!data.length){ grid.innerHTML = `<div class='col-12'><div class='card-soft p-5 text-center'>No notices found.</div></div>`; return; }
+      grid.innerHTML = data.map(n=>`
+        <div class="col-12 col-md-6 col-xl-4">
+          <article class="notice-card h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge ${n.pinned ? 'text-bg-warning' : 'text-bg-secondary'}">${n.pinned ? 'Pinned' : n.category}</span>
+              <small class="muted">${new Date(n.createdAt).toLocaleDateString()}</small>
+            </div>
+            <h5 class="mb-2">${n.title}</h5>
+            <p class="muted mb-3">${n.content.substring(0,150)}...</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="xsmall muted"><i class="bi bi-building"></i> ${n.department}</span>
+              <button class="btn btn-sm btn-primary" data-id="${n.id}" data-action="read">Read More</button>
+            </div>
+          </article>
+        </div>`).join('');
+      document.getElementById('loadMoreDash').style.display = filterByChipAndSearch(list, q).length > dashVisible ? 'inline-block' : 'none';
+      grid.querySelectorAll('[data-action="read"]').forEach(btn=>btn.addEventListener('click',()=>openNoticeModal(btn.dataset.id)));
+    }
+
+    function renderNoticesTable(){
+      const tbody = document.getElementById('tableNotices');
+      const cardsContainer = document.getElementById('noticesCards');
+      const list = getNotices();
+      const sel = document.getElementById('filterSelect').value;
+      const q = (document.getElementById('searchInput').value||'').toLowerCase();
+      const filtered = list.filter(n => (sel==='all' || n.category===sel) && (n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)));
+      
+      // Desktop table view
+      if(tbody) {
+        tbody.innerHTML = filtered.map(n=>`
+          <tr>
+            <td>${n.title}</td>
+            <td>${n.department}</td>
+            <td>${n.category}</td>
+            <td>${new Date(n.createdAt).toLocaleDateString()}</td>
+            <td class="text-end"><button class="btn btn-sm btn-primary" data-id="${n.id}" data-action="read">Open</button></td>
+          </tr>`).join('');
+        tbody.querySelectorAll('[data-action="read"]').forEach(btn=>btn.addEventListener('click',()=>openNoticeModal(btn.dataset.id)));
+      }
+      
+      // Mobile card view
+      if(cardsContainer) {
+        if(!filtered.length) {
+          cardsContainer.innerHTML = `<div class='col-12'><div class='card-soft p-5 text-center'>No notices found.</div></div>`;
+          return;
+        }
+        cardsContainer.innerHTML = filtered.map(n=>`
+          <div class="col-12">
+            <article class="notice-card h-100 p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge ${n.pinned ? 'text-bg-warning' : 'text-bg-secondary'}">${n.pinned ? 'Pinned' : n.category}</span>
+                <small class="muted">${new Date(n.createdAt).toLocaleDateString()}</small>
+              </div>
+              <h6 class="mb-2">${n.title}</h6>
+              <p class="muted mb-2 small">${n.content.substring(0,120)}${n.content.length > 120 ? '...' : ''}</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="xsmall muted"><i class="bi bi-building"></i> ${n.department}</span>
+                <button class="btn btn-sm btn-primary" data-id="${n.id}" data-action="read">Read More</button>
+              </div>
+            </article>
+          </div>`).join('');
+        cardsContainer.querySelectorAll('[data-action="read"]').forEach(btn=>btn.addEventListener('click',()=>openNoticeModal(btn.dataset.id)));
+      }
+    }
+
+
+    /******************** NOTICE MODAL *************************/
+    function openNoticeModal(id){
+      const n = getNotices().find(x=>String(x.id)===String(id));
+      if(!n) return;
+      const tpl = `
+      <div class="modal fade" id="noticeModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content" style="background:var(--card);color:var(--text)">
+            <div class="modal-header">
+              <h5 class="modal-title">${n.title}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge ${n.pinned ? 'text-bg-warning' : 'text-bg-secondary'}">${n.pinned ? 'Pinned' : n.category}</span>
+                <small class="muted">${new Date(n.createdAt).toLocaleString()}</small>
+              </div>
+              <p class="mb-0">${n.content}</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+      const holder = document.createElement('div'); holder.innerHTML = tpl; document.body.appendChild(holder.firstElementChild);
+      const modalEl = document.getElementById('noticeModal');
+      const modal = new bootstrap.Modal(modalEl); modal.show();
+      modalEl.addEventListener('hidden.bs.modal', ()=> modalEl.remove());
+    }
+
+    /******************** PROFILE *************************/
+    function loadProfileIntoUI(){
+      try {
+        const p = getProfile();
+        const initials = p.name ? p.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase() : 'ST';
+        
+        // Sidebar profile
+        const profileNameEl = document.getElementById('profileName');
+        const profileIdEl = document.getElementById('profileId');
+        const profileInitialsEl = document.getElementById('profileInitials');
+        const profileInitialsTextEl = document.getElementById('profileInitialsText');
+        const profileSidebarImgEl = document.getElementById('profileSidebarImg');
+        if(profileNameEl) profileNameEl.textContent = p.name || 'Student Name';
+        if(profileIdEl) profileIdEl.textContent = p.id || '23/U/12345';
+        if(profileInitialsEl) {
+          if(p.picture && p.picture.trim() !== '' && profileSidebarImgEl) {
+            profileSidebarImgEl.src = p.picture;
+            profileSidebarImgEl.style.display = 'block';
+            if(profileInitialsTextEl) profileInitialsTextEl.style.display = 'none';
+          } else {
+            if(profileSidebarImgEl) profileSidebarImgEl.style.display = 'none';
+            if(profileInitialsTextEl) {
+              profileInitialsTextEl.style.display = 'block';
+              profileInitialsTextEl.textContent = initials;
+            } else {
+              profileInitialsEl.textContent = initials;
+            }
+          }
+        }
+        
+        // Topbar profile avatar (mobile)
+        const topbarAvatarEl = document.getElementById('topbarProfileAvatar');
+        const topbarImgEl = document.getElementById('topbarProfileImg');
+        if(topbarAvatarEl) {
+          if(p.picture && p.picture.trim() !== '' && topbarImgEl) {
+            topbarImgEl.src = p.picture;
+            topbarImgEl.style.display = 'block';
+            topbarImgEl.style.position = 'absolute';
+            topbarAvatarEl.textContent = '';
+          } else {
+            if(topbarImgEl) {
+              topbarImgEl.style.display = 'none';
+              topbarImgEl.src = '';
+            }
+            topbarAvatarEl.textContent = initials;
+          }
+        }
+        
+        // Mobile sticky header
+        const mobileNameEl = document.getElementById('profileMobileName');
+        const mobileIdEl = document.getElementById('profileMobileId');
+        const mobileAvatarEl = document.getElementById('profileMobileAvatar');
+        if(mobileNameEl) mobileNameEl.textContent = p.name || 'Student Name';
+        if(mobileIdEl) mobileIdEl.textContent = p.id || '23/U/12345';
+        if(mobileAvatarEl) {
+          if(p.picture && p.picture.trim() !== '') {
+            mobileAvatarEl.innerHTML = `<img src="${p.picture}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 999px;">`;
+          } else {
+            mobileAvatarEl.textContent = initials;
+          }
+        }
+        
+        // Profile picture preview
+        const imgEl = document.getElementById('profilePictureImg');
+        const initialsEl = document.getElementById('profilePictureInitials');
+        const removeBtn = document.getElementById('removePicture');
+        if(p.picture && p.picture.trim() !== '') {
+          if(imgEl) {
+            imgEl.src = p.picture;
+            imgEl.style.display = 'block';
+            imgEl.style.zIndex = '1';
+            // Force reflow to ensure display
+            imgEl.offsetHeight;
+          }
+          if(initialsEl) {
+            initialsEl.style.display = 'none';
+          }
+          if(removeBtn) {
+            removeBtn.style.display = 'inline-block';
+          }
+        } else {
+          if(imgEl) {
+            imgEl.src = '';
+            imgEl.style.display = 'none';
+          }
+          if(initialsEl) {
+            initialsEl.style.display = 'block';
+            initialsEl.textContent = initials;
+          }
+          if(removeBtn) {
+            removeBtn.style.display = 'none';
+          }
+        }
+        
+        // Form fields
+        const pNameEl = document.getElementById('p_name');
+        const pIdEl = document.getElementById('p_id');
+        const pEmailEl = document.getElementById('p_email');
+        const pDeptEl = document.getElementById('p_dept');
+        const pBioEl = document.getElementById('p_bio');
+        if(pNameEl) pNameEl.value = p.name || '';
+        if(pIdEl) pIdEl.value = p.id || '';
+        if(pEmailEl) pEmailEl.value = p.email || '';
+        if(pDeptEl) pDeptEl.value = p.dept || '';
+        if(pBioEl) pBioEl.value = p.bio || '';
+      } catch(error) {
+        console.error('Error loading profile into UI:', error);
+      }
+    }
+    
+    function handlePictureUpload(file){
+      if(!file) return;
+      // Validate file type
+      if(!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if(file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e){
+        try {
+          const dataUrl = e.target.result;
+          const p = getProfile();
+          p.picture = dataUrl;
+          saveProfile(p);
+          
+          // Force update the preview immediately
+          const imgEl = document.getElementById('profilePictureImg');
+          const initialsEl = document.getElementById('profilePictureInitials');
+          const removeBtn = document.getElementById('removePicture');
+          
+          if(imgEl && dataUrl) {
+            imgEl.src = dataUrl;
+            imgEl.style.display = 'block';
+            imgEl.style.zIndex = '1';
+            // Force browser to update
+            imgEl.offsetHeight;
+          }
+          if(initialsEl) {
+            initialsEl.style.display = 'none';
+          }
+          if(removeBtn) {
+            removeBtn.style.display = 'inline-block';
+          }
+          
+          // Update all profile displays
+          loadProfileIntoUI();
+        } catch(error) {
+          console.error('Error processing image:', error);
+          alert('Error processing image. Please try again.');
+        }
+      };
+      reader.onerror = function() {
+        alert('Error reading the image file. Please try again.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /******************** NAVIGATION (SPA-like) *************************/
+    const sections = ['dashboard','notices','profile'];
+    function showSection(key){
+      sections.forEach(id=>{
+        const el = document.getElementById('section-'+id);
+        if(el) el.hidden = (id!==key);
+      });
+      // activate desktop nav
+      document.querySelectorAll('[data-link]').forEach(a=>{
+        if(a.dataset.link){ a.classList.toggle('active', a.dataset.link===key); }
+      });
+      // activate bottom nav
+      document.querySelectorAll('.bottom-nav .nav-link').forEach(a=>{
+        if(a.dataset.link){ a.classList.toggle('active', a.dataset.link===key); }
+      });
+      // initial renders per section
+      if(key==='dashboard') renderDashboard();
+      if(key==='notices') renderNoticesTable();
+      if(key==='profile') loadProfileIntoUI();
+    }
+
+    /******************** EVENTS *************************/
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyTheme();
+
+      // theme buttons
+      document.getElementById('toggleThemeTop').addEventListener('click', toggleTheme);
+      document.getElementById('toggleThemeSide').addEventListener('click', toggleTheme);
+      document.getElementById('toggleThemeBottom').addEventListener('click', toggleTheme);
+
+      // nav links (desktop + topbar button + bottom nav)
+      document.querySelectorAll('[data-link]').forEach(el=>{
+        el.addEventListener('click', (e)=>{ e.preventDefault(); showSection(el.dataset.link); window.scrollTo({top:0, behavior:'smooth'}); });
+      });
+
+      // search affects dashboard & notices list
+      document.getElementById('searchInput').addEventListener('input', ()=>{ renderDashboard(); renderNoticesTable(); });
+      document.getElementById('filterSelect').addEventListener('change', renderNoticesTable);
+      document.getElementById('loadMoreDash').addEventListener('click', ()=>{ dashVisible+=6; renderDashboard(); });
+
+      // profile form
+      const profileForm = document.getElementById('profileForm');
+      if(profileForm) {
+        profileForm.addEventListener('submit', (e)=>{
+          e.preventDefault();
+          try {
+            const currentProfile = getProfile();
+            const pNameEl = document.getElementById('p_name');
+            const pIdEl = document.getElementById('p_id');
+            const pEmailEl = document.getElementById('p_email');
+            const pDeptEl = document.getElementById('p_dept');
+            const pBioEl = document.getElementById('p_bio');
+            
+            if(!pNameEl || !pIdEl) {
+              throw new Error('Form elements not found');
+            }
+            
+            const p = {
+              name: (pNameEl.value || '').trim() || 'Student Name',
+              id: (pIdEl.value || '').trim() || '23/U/12345',
+              email: (pEmailEl ? pEmailEl.value : '').trim(),
+              dept: (pDeptEl ? pDeptEl.value : '').trim(),
+              bio: (pBioEl ? pBioEl.value : '').trim(),
+              picture: (currentProfile && currentProfile.picture) ? currentProfile.picture : '',
+            };
+            
+            saveProfile(p); 
+            loadProfileIntoUI();
+            alert('Profile updated successfully.');
+          } catch(error) {
+            console.error('Error saving profile:', error);
+            alert('Error saving profile: ' + error.message);
+          }
+        });
+      }
+      
+      // Picture upload
+      const pictureInput = document.getElementById('p_picture');
+      if(pictureInput) {
+        pictureInput.addEventListener('change', (e)=>{
+          const file = e.target.files[0];
+          if(file) {
+            handlePictureUpload(file);
+          }
+        });
+      }
+      
+      // Remove picture
+      const removePictureBtn = document.getElementById('removePicture');
+      if(removePictureBtn) {
+        removePictureBtn.addEventListener('click', ()=>{
+          const p = getProfile();
+          p.picture = '';
+          saveProfile(p);
+          loadProfileIntoUI();
+        });
+      }
+      
+      document.getElementById('resetProfile').addEventListener('click', ()=>{ localStorage.removeItem('student_profile'); loadProfileIntoUI(); });
+
+      // initial UI
+      renderChips();
+      renderDashboard();
+      loadProfileIntoUI();
+      showSection('dashboard');
+    });
+
+    function logout(){
+      alert('Logged out successfully.');
+      // If you later add auth: localStorage.removeItem('user');
+      window.location.href = './index.html';
+    }
+    window.logout = logout;
+  </script>
+</body>
+</html>

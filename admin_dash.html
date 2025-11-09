@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MUBS Admin – Digital Noticeboard (SPA)</title>
+  
+  <!-- Bootstrap 5 + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{ --bg:#f8fafc; --text:#0f172a; --muted:#475569; --card:#ffffff; --border:#e2e8f0; --accent:#0d6efd; --accent-contrast:#ffffff; --chip:#e7efff; }
+    [data-theme="dark"]{ --bg:#0a1128; --text:#f8fafc; --muted:#cbd5e1; --card:#0f172a; --border:#1e293b; --accent:#facc15; --accent-contrast:#111827; --chip:#1f2a44; }
+
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--text)}
+
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    @media (max-width: 991.98px){.app{grid-template-columns:1fr}}
+
+    .sidebar{background:var(--card);border-right:1px solid var(--border)}
+    .brand{padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+    .logo{width:38px;height:38px;border-radius:10px;background:transparent;color:var(--accent-contrast);display:grid;place-items:center;font-weight:700;overflow:hidden}
+    .logo img{width:100%;height:100%;object-fit:contain;padding:4px}
+    .profile{padding:1rem 1.25rem;border-bottom:1px solid var(--border);text-align:center}
+    .avatar{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:var(--border);color:var(--text);font-weight:700;font-size:1.5rem;margin:0 auto;overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .sidebar .nav-link{color:var(--text);border-radius:.65rem}
+    .sidebar .nav-link.active,.sidebar .nav-link:hover{background:var(--chip)}
+
+    @media (max-width: 991.98px){.sidebar{display:none}}
+
+    .content{padding:1rem 1rem 5rem}
+    @media (min-width: 992px){.content{padding:1.5rem 2rem 3rem}}
+
+    .topbar{background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:.75rem}
+
+    .card-soft{background:var(--card);border:1px solid var(--border);border-radius:1rem}
+    .metric{background:var(--card);border:1px solid var(--border);border-radius:1rem}
+
+    .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .btn-outline-secondary{border-color:var(--border);color:var(--text)}
+
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:none;z-index:1030}
+    .bottom-nav .nav-link{flex:1;text-align:center;color:var(--text);padding:.5rem 0}
+    .bottom-nav .nav-link.active{color:var(--accent)}
+    @media (max-width: 991.98px){.bottom-nav{display:flex}}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand d-flex align-items-center gap-2">
+        <div class="logo">
+          <img src="mubs.png" alt="MUBS Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='M';">
+        </div>
+        <div>
+          <div class="fw-bold">MUBS Noticeboard</div>
+          <div class="small muted">Admin Panel</div>
+        </div>
+      </div>
+      <div class="profile">
+        <div class="avatar" id="sidebarAvatar">AD</div>
+        <div class="fw-semibold mt-2" id="sidebarName">Admin</div>
+        <div class="xsmall muted" id="sidebarDept">System Control</div>
+      </div>
+      <nav class="nav flex-column p-2">
+        <a class="nav-link active" data-link="dashboard" href="#"><i class="bi bi-grid me-2"></i>Dashboard</a>
+        <a class="nav-link" data-link="notices" href="#"><i class="bi bi-megaphone me-2"></i>Manage Notices</a>
+        <a class="nav-link" data-link="staff" href="#"><i class="bi bi-people me-2"></i>Manage Staff</a>
+        <a class="nav-link" data-link="profile" href="#"><i class="bi bi-person me-2"></i>Profile</a>
+        <hr>
+        <button id="toggleThemeSide" class="btn btn-sm btn-outline-secondary w-100 mb-2"><i class="bi bi-moon me-1"></i> Toggle Theme</button>
+        <button class="btn btn-sm btn-outline-danger w-100" onclick="logout()"><i class="bi bi-box-arrow-right me-1"></i> Logout</button>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="content">
+      <div class="topbar d-flex flex-wrap align-items-center gap-2 mb-4">
+        <!-- Mobile Logo and Profile -->
+        <div class="d-md-none d-flex align-items-center gap-2">
+          <!-- Mobile Profile Picture -->
+          <div class="avatar" id="topbarProfileAvatar" style="width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; background: var(--border); color: var(--text); font-weight: 700; flex-shrink: 0; cursor: pointer; overflow: hidden; position: relative;" data-link="profile">
+            <img id="topbarProfileImg" src="" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 999px; display: none; position: absolute;">
+          </div>
+          <div class="logo" style="width: 32px; height: 32px;">
+            <img src="mubs.png" alt="MUBS Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='M';" style="width: 100%; height: 100%; object-fit: contain;">
+          </div>
+          <div class="fw-bold small">MUBS</div>
+        </div>
+        <div class="input-group flex-grow-1">
+          <span class="input-group-text bg-transparent border-0"><i class="bi bi-search"></i></span>
+          <input class="form-control border-0" id="searchInput" placeholder="Search notices or staff..." />
+        </div>
+        <div class="ms-auto d-flex gap-2">
+          <button id="toggleThemeTop" class="btn btn-outline-secondary"><i class="bi bi-sun"></i></button>
+        </div>
+      </div>
+
+      <!-- Sections -->
+
+      <!-- DASHBOARD -->
+      <section id="section-dashboard">
+        <div class="row g-3 mb-3">
+          <div class="col-md-3"><div class="metric p-3"><div class="xsmall text-muted">Total Notices</div><div class="fs-3 fw-bold" id="mTotal">0</div></div></div>
+          <div class="col-md-3"><div class="metric p-3"><div class="xsmall text-muted">Pending Approvals</div><div class="fs-3 fw-bold" id="mPending">0</div></div></div>
+          <div class="col-md-3"><div class="metric p-3"><div class="xsmall text-muted">Published</div><div class="fs-3 fw-bold" id="mPublished">0</div></div></div>
+          <div class="col-md-3"><div class="metric p-3"><div class="xsmall text-muted">Staff Accounts</div><div class="fs-3 fw-bold" id="mStaff">0</div></div></div>
+        </div>
+        <div class="row g-3 mb-4">
+          <div class="col-lg-6"><div class="card-soft p-3"><h6 class="mb-3">Notices by Category</h6><canvas id="catChart"></canvas></div></div>
+          <div class="col-lg-6"><div class="card-soft p-3"><h6 class="mb-3">Notices by Status</h6><canvas id="statusChart"></canvas></div></div>
+        </div>
+        <div class="card-soft p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Recent Notices</h6><a class="btn btn-sm btn-outline-secondary" data-link="notices">Manage</a></div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0"><thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Created</th></tr></thead><tbody id="recentBody"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MANAGE NOTICES -->
+      <section id="section-notices" hidden>
+        <div class="card-soft p-3 mb-3 d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">All Notices</div>
+          <div class="d-flex gap-2">
+            <select id="nStatus" class="form-select form-select-sm">
+              <option value="all">All Statuses</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="published">Published</option>
+              <option value="archived">Archived</option>
+            </select>
+            <select id="nCat" class="form-select form-select-sm">
+              <option value="all">All Categories</option>
+              <option>Academics</option>
+              <option>Examinations</option>
+              <option>Events</option>
+              <option>ICT</option>
+              <option>General</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-responsive card-soft">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Title</th><th>Department</th><th>Category</th><th>Status</th><th>Created</th><th class="text-end">Actions</th></tr></thead>
+            <tbody id="adminNotices"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- MANAGE STAFF -->
+      <section id="section-staff" hidden>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Staff Accounts</h5>
+          <button class="btn btn-primary" id="addStaffBtn">+ Add Staff</button>
+        </div>
+        <div class="table-responsive card-soft">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>Name</th><th>Department</th><th>Email</th><th>Phone</th><th class="text-end">Actions</th></tr></thead>
+            <tbody id="staffBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="section-profile" hidden>
+        <h4 class="fw-bold mb-3">Profile</h4>
+        <form id="profileForm" class="card-soft p-4 text-center">
+          <div class="mb-3">
+            <div class="avatar mb-3" id="profileAvatar">AD</div>
+            <input type="file" id="photoInput" accept="image/*" class="form-control form-control-sm" style="max-width:300px;margin:auto">
+          </div>
+          <div class="row g-3 text-start">
+            <div class="col-md-6"><label class="form-label">Full Name</label><input id="p_name" class="form-control" required /></div>
+            <div class="col-md-6"><label class="form-label">Department</label><input id="p_dept" class="form-control" /></div>
+            <div class="col-md-6"><label class="form-label">Email</label><input id="p_email" type="email" class="form-control" /></div>
+            <div class="col-md-6"><label class="form-label">Phone</label><input id="p_phone" class="form-control" /></div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary" id="resetProfile">Reset</button>
+            <button class="btn btn-primary">Save Profile</button>
+          </div>
+        </form>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Bottom navbar (mobile) -->
+  <nav class="bottom-nav">
+    <a class="nav-link active" data-link="dashboard" href="#"><i class="bi bi-grid fs-5 d-block"></i><span class="xsmall">Home</span></a>
+    <a class="nav-link" data-link="notices" href="#"><i class="bi bi-megaphone fs-5 d-block"></i><span class="xsmall">Notices</span></a>
+    <a class="nav-link" data-link="staff" href="#"><i class="bi bi-people fs-5 d-block"></i><span class="xsmall">Staff</span></a>
+    <a class="nav-link" data-link="profile" href="#"><i class="bi bi-person fs-5 d-block"></i><span class="xsmall">Profile</span></a>
+    <button class="nav-link border-0 bg-transparent" id="toggleThemeBottom"><i class="bi bi-moon-stars fs-5 d-block"></i><span class="xsmall">Theme</span></button>
+  </nav>
+
+  <script>
+    /*************** THEME ***************/
+    function applyTheme(){ const t = localStorage.getItem('theme')||'light'; document.documentElement.setAttribute('data-theme',t); document.body.setAttribute('data-theme',t); }
+    function toggleTheme(){ const t = localStorage.getItem('theme')||'light'; const n = t==='light'?'dark':'light'; localStorage.setItem('theme',n); applyTheme(); }
+
+    /*************** STORAGE KEYS ***************/
+    const NOTICES_KEY = 'notices';
+    const STAFF_PROFILE_KEY = 'staff_profile'; // single profile (demo). For multiple, store an array under STAFF_LIST_KEY
+    const STAFF_LIST_KEY = 'staff_list';
+    const ADMIN_PROFILE_KEY = 'admin_profile';
+
+    /*************** NOTICES ***************/
+    function getAllNotices(){ const list = JSON.parse(localStorage.getItem(NOTICES_KEY)||'null'); return Array.isArray(list)? list : []; }
+    function saveAllNotices(list){ localStorage.setItem(NOTICES_KEY, JSON.stringify(list)); }
+
+    /*************** STAFF ***************/
+    function getStaffList(){ const list = JSON.parse(localStorage.getItem(STAFF_LIST_KEY)||'null'); if(Array.isArray(list)) return list; const single = JSON.parse(localStorage.getItem(STAFF_PROFILE_KEY)||'null'); return single? [single] : []; }
+    function saveStaffList(list){ localStorage.setItem(STAFF_LIST_KEY, JSON.stringify(list)); }
+
+    /*************** ADMIN PROFILE ***************/
+    function getAdminProfile(){ const p = JSON.parse(localStorage.getItem(ADMIN_PROFILE_KEY)||'null'); return p || { name:'Admin', dept:'System Control', email:'', phone:'', photo:null }; }
+    function saveAdminProfile(p){ localStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(p)); }
+
+    /*************** DASHBOARD METRICS ***************/
+    function computeMetrics(){
+      const notices = getAllNotices();
+      const total = notices.length;
+      const pending = notices.filter(n=>n.status==='pending').length;
+      const published = notices.filter(n=>n.status==='published').length;
+      const staff = getStaffList().length;
+      return { total, pending, published, staff };
+    }
+
+    function updateMetricCards(){
+      const m = computeMetrics();
+      document.getElementById('mTotal').textContent = m.total;
+      document.getElementById('mPending').textContent = m.pending;
+      document.getElementById('mPublished').textContent = m.published;
+      document.getElementById('mStaff').textContent = m.staff;
+    }
+
+    /*************** CHARTS ***************/
+    let catChart, statusChart;
+    function buildCharts(){
+      const ctx1 = document.getElementById('catChart');
+      const ctx2 = document.getElementById('statusChart');
+      const notices = getAllNotices();
+      const catLabels = ['Academics','Examinations','Events','ICT','General'];
+      const catCounts = catLabels.map(c => notices.filter(n=>n.category===c).length);
+      const statusLabels = ['draft','pending','published','archived'];
+      const statusCounts = statusLabels.map(s => notices.filter(n=>n.status===s).length);
+
+      if(catChart) catChart.destroy();
+      if(statusChart) statusChart.destroy();
+
+      catChart = new Chart(ctx1, { type:'bar', data:{ labels:catLabels, datasets:[{ label:'Count', data:catCounts }] }, options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } } });
+      statusChart = new Chart(ctx2, { type:'pie', data:{ labels:statusLabels, datasets:[{ data:statusCounts }] }, options:{ responsive:true, maintainAspectRatio:false } });
+      // Set heights so they look good
+      ctx1.parentElement.style.height = '320px';
+      ctx2.parentElement.style.height = '320px';
+    }
+
+    /*************** RECENT NOTICES ***************/
+    function renderRecent(){
+      const tbody = document.getElementById('recentBody');
+      const notices = getAllNotices().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt)).slice(0,5);
+      tbody.innerHTML = notices.map(n=>`<tr><td>${n.title}</td><td>${n.category}</td><td>${n.status}</td><td>${new Date(n.createdAt).toLocaleDateString()}</td></tr>`).join('');
+    }
+
+    /*************** MANAGE NOTICES TABLE ***************/
+    function renderAdminNotices(){
+      const tbody = document.getElementById('adminNotices');
+      const statusSel = document.getElementById('nStatus').value;
+      const catSel = document.getElementById('nCat').value;
+      const q = (document.getElementById('searchInput').value||'').toLowerCase();
+      const filtered = getAllNotices().filter(n=>{
+        const okS = statusSel==='all' || n.status===statusSel;
+        const okC = catSel==='all' || n.category===catSel;
+        const okQ = n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q);
+        return okS && okC && okQ;
+      });
+      tbody.innerHTML = filtered.map(n=>`
+        <tr>
+          <td>${n.title}</td>
+          <td>${n.department || '-'}</td>
+          <td>${n.category}</td>
+          <td><span class='badge rounded-pill bg-light text-dark'>${n.status}</span></td>
+          <td>${new Date(n.createdAt).toLocaleDateString()}</td>
+          <td class='text-end'>
+            <div class='btn-group btn-group-sm'>
+              <button class='btn btn-outline-success' data-action='approve' data-id='${n.id}' title='Publish'><i class='bi bi-check2-circle'></i></button>
+              <button class='btn btn-outline-warning' data-action='archive' data-id='${n.id}' title='Archive'><i class='bi bi-archive'></i></button>
+              <button class='btn btn-outline-danger' data-action='delete' data-id='${n.id}' title='Delete'><i class='bi bi-trash'></i></button>
+            </div>
+          </td>
+        </tr>`).join('');
+      tbody.querySelectorAll('button[data-action]').forEach(b=>{
+        const id = Number(b.dataset.id);
+        b.addEventListener('click', ()=>{
+          const list = getAllNotices();
+          const idx = list.findIndex(x=>x.id===id);
+          if(idx<0) return;
+          if(b.dataset.action==='approve'){ list[idx].status='published'; }
+          if(b.dataset.action==='archive'){ list[idx].status='archived'; }
+          if(b.dataset.action==='delete'){ if(!confirm('Delete this notice?')) return; list.splice(idx,1); }
+          saveAllNotices(list);
+          renderAdminNotices(); updateMetricCards(); buildCharts(); renderRecent();
+          alert('Action completed.');
+        });
+      });
+    }
+
+    /*************** MANAGE STAFF ***************/
+    function renderStaff(){
+      const tbody = document.getElementById('staffBody');
+      const q = (document.getElementById('searchInput').value||'').toLowerCase();
+      const list = getStaffList().filter(s=> (s.name||'').toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q) );
+      tbody.innerHTML = list.map((s,idx)=>`
+        <tr>
+          <td>${s.name||'-'}</td>
+          <td>${s.dept||'-'}</td>
+          <td>${s.email||'-'}</td>
+          <td>${s.phone||'-'}</td>
+          <td class='text-end'>
+            <div class='btn-group btn-group-sm'>
+              <button class='btn btn-outline-secondary' data-action='edit' data-idx='${idx}'><i class='bi bi-pencil'></i></button>
+              <button class='btn btn-outline-danger' data-action='del' data-idx='${idx}'><i class='bi bi-trash'></i></button>
+            </div>
+          </td>
+        </tr>`).join('');
+      // actions
+      tbody.querySelectorAll('button[data-action]').forEach(b=>{
+        const idx = Number(b.dataset.idx);
+        b.addEventListener('click', ()=>{
+          const list = getStaffList();
+          if(b.dataset.action==='edit'){
+            const s = list[idx];
+            openStaffModal(idx, s);
+          }
+          if(b.dataset.action==='del'){
+            if(!confirm('Delete this staff account?')) return;
+            list.splice(idx,1); saveStaffList(list); renderStaff(); updateMetricCards(); alert('Staff removed.');
+          }
+        });
+      });
+    }
+
+    function openStaffModal(idx=null, staff=null){
+      const s = staff || { name:'', dept:'', email:'', phone:'' };
+      const html = `
+      <div class='modal fade' id='staffModal' tabindex='-1'>
+        <div class='modal-dialog'>
+          <div class='modal-content' style='background:var(--card);color:var(--text)'>
+            <div class='modal-header'><h5 class='modal-title'>${idx===null?'Add Staff':'Edit Staff'}</h5><button class='btn-close' data-bs-dismiss='modal'></button></div>
+            <div class='modal-body'>
+              <div class='mb-2'><label class='form-label'>Name</label><input id='s_name' class='form-control' value='${s.name||''}'></div>
+              <div class='mb-2'><label class='form-label'>Department</label><input id='s_dept' class='form-control' value='${s.dept||''}'></div>
+              <div class='mb-2'><label class='form-label'>Email</label><input id='s_email' type='email' class='form-control' value='${s.email||''}'></div>
+              <div class='mb-2'><label class='form-label'>Phone</label><input id='s_phone' class='form-control' value='${s.phone||''}'></div>
+            </div>
+            <div class='modal-footer'>
+              <button class='btn btn-outline-secondary' data-bs-dismiss='modal'>Cancel</button>
+              <button class='btn btn-primary' id='saveStaffBtn'>Save</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+      const wrap = document.createElement('div'); wrap.innerHTML = html; document.body.appendChild(wrap.firstElementChild);
+      const el = document.getElementById('staffModal'); const m = new bootstrap.Modal(el); m.show();
+      el.querySelector('#saveStaffBtn').addEventListener('click', ()=>{
+        const list = getStaffList();
+        const obj = {
+          name: document.getElementById('s_name').value.trim() || 'Staff',
+          dept: document.getElementById('s_dept').value.trim(),
+          email: document.getElementById('s_email').value.trim(),
+          phone: document.getElementById('s_phone').value.trim(),
+        };
+        if(idx===null) list.push(obj); else list[idx]=obj;
+        saveStaffList(list); m.hide(); el.remove(); renderStaff(); updateMetricCards(); alert('Saved.');
+      });
+      el.addEventListener('hidden.bs.modal', ()=> el.remove());
+    }
+
+    /*************** PROFILE (ADMIN) ***************/
+    function loadAdminProfile(){
+      const p = getAdminProfile();
+      document.getElementById('p_name').value = p.name||'';
+      document.getElementById('p_dept').value = p.dept||'';
+      document.getElementById('p_email').value = p.email||'';
+      document.getElementById('p_phone').value = p.phone||'';
+      const initials = (p.name||'AD').split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
+      const sAv = document.getElementById('sidebarAvatar'); const pAv = document.getElementById('profileAvatar');
+      if(p.photo){ sAv.innerHTML = `<img src='${p.photo}' alt='avatar'>`; pAv.innerHTML = `<img src='${p.photo}' alt='avatar'>`; }
+      else { sAv.textContent = initials; pAv.textContent = initials; }
+      document.getElementById('sidebarName').textContent = p.name || 'Admin';
+      document.getElementById('sidebarDept').textContent = p.dept || 'System Control';
+      
+      // Topbar profile avatar (mobile)
+      const topbarAvatarEl = document.getElementById('topbarProfileAvatar');
+      const topbarImgEl = document.getElementById('topbarProfileImg');
+      if(topbarAvatarEl) {
+        if(p.photo && topbarImgEl) {
+          topbarImgEl.src = p.photo;
+          topbarImgEl.style.display = 'block';
+          topbarImgEl.style.position = 'absolute';
+          topbarAvatarEl.textContent = '';
+        } else {
+          if(topbarImgEl) {
+            topbarImgEl.style.display = 'none';
+            topbarImgEl.src = '';
+          }
+          topbarAvatarEl.textContent = initials;
+        }
+      }
+    }
+
+    function handleAdminPhoto(file){
+      if(!file) return; if(!file.type.startsWith('image/')){ alert('Please select an image.'); return; }
+      if(file.size > 5*1024*1024){ alert('Image size should be < 5MB.'); return; }
+      const r = new FileReader(); r.onload = ()=>{ const p=getAdminProfile(); p.photo=r.result; saveAdminProfile(p); loadAdminProfile(); alert('Photo uploaded successfully.'); }; r.onerror=()=>alert('Error reading image.'); r.readAsDataURL(file);
+    }
+
+    /*************** NAV + INIT ***************/
+    const sections = ['dashboard','notices','staff','profile'];
+    function showSection(key){
+      sections.forEach(id=>{ const el=document.getElementById('section-'+id); if(el) el.hidden=(id!==key); });
+      document.querySelectorAll('[data-link]').forEach(a=> a.classList.toggle('active', a.dataset.link===key));
+      if(key==='dashboard'){ updateMetricCards(); buildCharts(); renderRecent(); }
+      if(key==='notices') renderAdminNotices();
+      if(key==='staff') renderStaff();
+      if(key==='profile') loadAdminProfile();
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyTheme();
+      ['toggleThemeTop','toggleThemeSide','toggleThemeBottom'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click', toggleTheme); });
+      document.querySelectorAll('[data-link]').forEach(el=> el.addEventListener('click', (e)=>{ e.preventDefault(); showSection(el.dataset.link); window.scrollTo({top:0,behavior:'smooth'}); }));
+
+      document.getElementById('searchInput').addEventListener('input', ()=>{ renderAdminNotices(); renderStaff(); });
+      document.getElementById('nStatus').addEventListener('change', renderAdminNotices);
+      document.getElementById('nCat').addEventListener('change', renderAdminNotices);
+      document.getElementById('addStaffBtn').addEventListener('click', ()=> openStaffModal());
+
+      document.getElementById('photoInput').addEventListener('change', e=> handleAdminPhoto(e.target.files[0]));
+      document.getElementById('profileForm').addEventListener('submit', e=>{ e.preventDefault(); const p={ name:document.getElementById('p_name').value.trim()||'Admin', dept:document.getElementById('p_dept').value.trim(), email:document.getElementById('p_email').value.trim(), phone:document.getElementById('p_phone').value.trim(), photo:getAdminProfile().photo||null }; saveAdminProfile(p); loadAdminProfile(); alert('Profile updated successfully.'); });
+      document.getElementById('resetProfile').addEventListener('click', ()=>{ localStorage.removeItem(ADMIN_PROFILE_KEY); loadAdminProfile(); });
+
+      // initial
+      loadAdminProfile();
+      updateMetricCards();
+      buildCharts();
+      renderRecent();
+      showSection('dashboard');
+    });
+
+    function logout(){ alert('Logged out successfully.'); window.location.href = './index.html'; }
+  </script>
+</body>
+</html>
